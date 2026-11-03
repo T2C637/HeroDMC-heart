@@ -25,7 +25,7 @@ Baselines (library code, not counted as our implementation): scikit-learn KD-tre
 
 ## 3. Data
 
-The **Diabetes 130-US Hospitals (1999-2008)** dataset (Strack et al., 2014; UCI Machine Learning Repository, CC BY 4.0): 101,766 inpatient encounters, 71,518 patients and 50 attributes (demographics, stay and utilization counts, ICD-9 diagnoses, 23 medication fields), with the 3-class label `readmitted` (NO, >30, <30; <30 is about 11%).
+The **Diabetes 130-US Hospitals (1999-2008)** dataset (Strack et al., 2014; UCI Machine Learning Repository, CC BY 4.0): 101,766 inpatient encounters, 71,518 patients and 50 attributes (demographics, stay and utilization counts, ICD-9 diagnoses, 23 medication fields), with the 3-class label `readmitted` (NO, >30, <30; <30 is about 11%). The dataset is widely used for readmission prediction; our contribution is an algorithmic study of approximate similarity search on it.
 
 Preprocessing: drop IDs and `weight` (about 97% missing), and keep missing lab results as an explicit category. Because pivot methods only need a metric, we can use a mixed-type distance (the mean of per-feature distances: range-normalized absolute difference for numeric and ordinal attributes, 0/1 mismatch for categorical ones, in the spirit of Gower, 1971), which is a proper metric. We will also test an all-numeric one-hot Euclidean encoding. Subsets of N = 10k, 25k, 50k and 100k provide scaling instances.
 
