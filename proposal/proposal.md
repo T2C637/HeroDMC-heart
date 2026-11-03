@@ -1,51 +1,60 @@
-# DS8001 Project Proposal: Pivot-Based Approximate Similarity Search for Hospital Encounters
+# DS8001 Project Proposal: Permutation-Based Approximate kNN Search for Mixed-Type Hospital Encounters
 
 Jared Smouter and Amarnadh Nalla | Project path: **Empirical Analysis** | Group of two
 
+(Source text of the one-page PDF built by `build_proposal.py`.)
+
 ## 1. Problem and questions
 
-Finding the most similar past hospital encounters supports case-based reasoning, cohort building and nearest-neighbor (kNN) risk prediction, but exact search computes a distance to every one of the N encounters. Following the scalable-indexing material of the course, we study the algorithmic question: *how well can pivot-based approximate indexes trade search quality against distance computations, index size and build cost on large, mixed-type clinical data?*
+Exact k-nearest-neighbor (kNN) search computes a distance to all N indexed encounters. We study, as a purely algorithmic question (no clinical claim), how permutation-based approximate indexes trade recall against distance computations, index size and build cost under a mixed-type distance. The dataset is widely used for readmission prediction; our contribution is an algorithmic study of approximate similarity search on it.
 
-- **Q1.** How do the number of pivots n, the pruned-list length ñ and the re-ranking budget c affect recall@K, and which dominates?
-- **Q2.** Does the metric permutation table (MPT) improve on the metric inverted file (MIF) accumulator, especially for small ñ?
-- **Q3.** How do the costs grow with N, and how does the intrinsic dimensionality of the data limit pruning, compared with exact tree indexes?
+- **RQ1.** How do the number of pivots n, the retained permutation length L and the re-ranking budget c affect recall@10 and query cost, and how do these costs scale with N?
+- **RQ2.** At matched L and c, when does a truncated MI-File beat a truncated permutation scan, and how does random versus farthest-first pivot selection change this?
 
-## 2. Algorithms and implementation
+## 2. Methods
 
-We will implement ourselves:
+Implemented by us (following the permutation-based indexing framework of Chávez et al., 2008, and Mohamed and Marchand-Maillet, 2015):
 
-1. **Exact brute-force** K-NN, as ground truth.
-2. **Permutation-based indexing** (PBI), where each object is stored as the ordered list of its ñ nearest pivots.
-3. The **metric inverted file** (MIF) with its Spearman footrule accumulator and exact re-ranking of the best c candidates (Amato and Savino, 2008).
-4. The **MPT** scoring refinement, plus a prefix index (Esuli, 2012) if time permits.
+1. **Brute-force exact kNN** (ground truth, ties broken by encounter id).
+2. **Truncated permutation scan (TPS):** each object stores the ranks of its L nearest pivots (rank L+1 otherwise); the query scores all objects by the Spearman footrule over the n pivots, keeps the best c and re-ranks them with the true distance (exact only within the candidate set).
+3. **Truncated MI-File** (Amato and Savino, 2008): per-pivot posting lists of (object, rank), same score and re-ranking, so only objects sharing a retained pivot are touched.
+4. Random versus farthest-first pivot selection.
 
-We will also compare random against farthest-first pivot selection. The report will analyze build cost O(Nn) distances, index size O(Nñ), and why recall is limited when a query and its true neighbor share no pivot.
+Library baseline (not counted as ours): scikit-learn **BallTree**, Manhattan metric, on an exact weighted-L1 encoding of the distance, validated against brute force.
 
-Baselines (library code, not counted as our implementation): scikit-learn KD-tree and ball tree for exact search, and an inverted-file (IVF) index with k-means centroids (Jegou et al., 2011) built with scikit-learn.
+Complexity: build O(Nn) distances plus ranking; storage O(NL); query n pivot distances plus candidate scoring plus c re-ranking distances.
+
+**Distance:** six equal-weight feature groups (age, utilization, admission/discharge, ICD-9 diagnosis chapters, labs, medications); numeric = scale-normalized absolute difference, nominal = 0/1 mismatch, missing = fixed state or median plus indicator (no pairwise omission). With fixed scales and weights this is a weighted L1 metric, verified (identity, triangle inequality) on sampled triples. Missing values: diagnoses, specialty, payer and labs use explicit UNKNOWN/NOT_MEASURED states; numerics use the index median.
 
 ## 3. Data
 
-The **Diabetes 130-US Hospitals (1999-2008)** dataset (Strack et al., 2014; UCI Machine Learning Repository, CC BY 4.0): 101,766 inpatient encounters, 71,518 patients and 50 attributes (demographics, stay and utilization counts, ICD-9 diagnoses, 23 medication fields), with the 3-class label `readmitted` (NO, >30, <30; <30 is about 11%). The dataset is widely used for readmission prediction; our contribution is an algorithmic study of approximate similarity search on it.
-
-Preprocessing: drop IDs and `weight` (about 97% missing), and keep missing lab results as an explicit category. Because pivot methods only need a metric, we can use a mixed-type distance (the mean of per-feature distances: range-normalized absolute difference for numeric and ordinal attributes, 0/1 mismatch for categorical ones, in the spirit of Gower, 1971), which is a proper metric. We will also test an all-numeric one-hot Euclidean encoding. Subsets of N = 10k, 25k, 50k and 100k provide scaling instances.
+Diabetes 130-US Hospitals (1999-2008; Strack et al., 2014; UCI, CC BY 4.0): 101,766 encounters, 71,518 patients. Excluded: IDs, `readmitted`, race, gender, `weight`. Patients are split 90/5/5 into index/validation/test with a fixed seed; scales and medians are fit on the index partition only.
 
 ## 4. Experiments and metrics
 
-On 1,000 held-out queries with K = 10 and 50 we report recall@K against brute-force ground truth. Following the lecture, we report machine-independent costs: distances computed per query, postings read per query, index size and build distances. Wall-clock query latency and peak memory are reported too, but only between methods run in the same language on the same machine.
+- Nested N = 10k, 50k, full index partition; 300 validation and 300 test queries (one encounter per patient).
+- Grid: n in {32, 64}, L in {8, 16, 32} (L <= n), c/N in {0.5%, 1%, 5%}, random and farthest-first pivots, 3 seeds.
+- Pareto-optimal settings chosen on validation, frozen, evaluated on test once.
+- Metrics: recall@10; distance computations, entries scored, postings read per query; index size; build distances; median latency and peak memory (single-threaded).
+- Patient-level bootstrap 95% CIs, paired per-query differences, seed variability reported separately from query variability; MI-File zero-overlap miss rate.
 
-We run a grid over (n, ñ, c) and report the recall-cost trade-off curves for each method, then the scaling with N. Queries come from a patient-grouped split (by `patient_nbr`) so no patient appears in both the index and the queries. Pivot selection is random, so each setting is repeated over 10 seeds and reported as mean ± standard deviation. Parameters are tuned on a validation set of patients, not on the query set.
+Work split: J. Smouter - preprocessing, metric, brute force, BallTree; A. Nalla - TPS, MI-File, pivots; experiments, statistics and report are joint.
 
-As an optional extension, we test how approximate neighbors change kNN readmission prediction, using balanced accuracy and macro-F1.
+## 5. Implementation, validation and plan
 
-## 5. Deliverables
+Python 3.11+ (NumPy, pandas; scikit-learn only for the BallTree baseline and pairwise L1 kernels), organized as a package with fixed seeds, a README and pytest tests. Distances are computed in vectorized chunks; brute-force top-50 lists are cached per N.
 
-A Python (3.11+) package with a README and fixed seeds, and a report connecting the empirical trade-offs to the theory of pivot-based indexing and the curse of dimensionality.
+Correctness checks: metric axioms on sampled triples; BallTree equals brute force; TPS and MI-File reproduce the brute-force answer when c = N; no patient in more than one partition.
+
+Primary coding already done: loader, patient-grouped split, weighted-L1 encoder, brute-force oracle, metric tests. Plan: pivot permutations and TPS (mid-Nov), MI-File and BallTree validation (late Nov), experiments, analysis and report (until Dec 7).
+
+Expectation (to be tested, not assumed): recall rises with L and c; the MI-File reads far fewer entries than the scan at small L, at the risk of zero-overlap misses.
+
+Threats to validity: one dataset and one distance design; recall is measured against the exact answer under our metric, not clinical similarity.
 
 ## References
 
-- Amato, G., and Savino, P. (2008). Approximate similarity search in metric spaces using inverted files. In *Proc. 3rd International Conference on Scalable Information Systems (InfoScale)*.
-- Esuli, A. (2012). Use of permutation prefixes for efficient and scalable approximate similarity search. *Information Processing & Management*, 48(5), 889-902.
-- Gower, J. C. (1971). A general coefficient of similarity and some of its properties. *Biometrics*, 27(4), 857-871.
-- Jegou, H., Douze, M., and Schmid, C. (2011). Product quantization for nearest neighbor search. *IEEE Transactions on Pattern Analysis and Machine Intelligence*, 33(1), 117-128.
+- Amato, G., and Savino, P. (2008). Approximate similarity search in metric spaces using inverted files. *Proc. 3rd InfoScale*.
+- Chávez, E., Figueroa, K., and Navarro, G. (2008). Effective proximity retrieval by ordering permutations. *IEEE TPAMI*, 30(9), 1647-1658.
 - Mohamed, H., and Marchand-Maillet, S. (2015). Scalable indexing for big data processing. In *Big Data: Algorithms, Analytics, and Applications*. Chapman and Hall/CRC.
-- Strack, B., DeShazo, J. P., Gennings, C., Olmo, J. L., Ventura, S., Cios, K. J., and Clore, J. N. (2014). Impact of HbA1c measurement on hospital readmission rates: analysis of 70,000 clinical database patient records. *BioMed Research International*, 2014, Article 781670. Data: UCI Machine Learning Repository, doi:10.24432/C5230J.
+- Strack, B., et al. (2014). Impact of HbA1c measurement on hospital readmission rates. *BioMed Research International*, 2014, 781670. Data: UCI ML Repository, doi:10.24432/C5230J.
