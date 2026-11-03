@@ -13,7 +13,7 @@ Exact k-nearest-neighbor (kNN) search computes a distance to all N indexed encou
 
 ## 2. Methods
 
-Implemented by us:
+Implemented by us (following the permutation-based indexing framework of Chávez et al., 2008, and Mohamed and Marchand-Maillet, 2015):
 
 1. **Brute-force exact kNN** (ground truth, ties broken by encounter id).
 2. **Truncated permutation scan (TPS):** each object stores the ranks of its L nearest pivots (rank L+1 otherwise); the query scores all objects by the Spearman footrule over the n pivots, keeps the best c and re-ranks them with the true distance (exact only within the candidate set).
@@ -24,7 +24,7 @@ Library baseline (not counted as ours): scikit-learn **BallTree**, Manhattan met
 
 Complexity: build O(Nn) distances plus ranking; storage O(NL); query n pivot distances plus candidate scoring plus c re-ranking distances.
 
-**Distance:** six equal-weight feature groups (age, utilization, admission/discharge, ICD-9 diagnosis chapters, labs, medications); numeric = scale-normalized absolute difference, nominal = 0/1 mismatch, missing = fixed state or median plus indicator (no pairwise omission). With fixed scales and weights this is a metric, verified (identity, triangle inequality) on sampled triples.
+**Distance:** six equal-weight feature groups (age, utilization, admission/discharge, ICD-9 diagnosis chapters, labs, medications); numeric = scale-normalized absolute difference, nominal = 0/1 mismatch, missing = fixed state or median plus indicator (no pairwise omission). With fixed scales and weights this is a weighted L1 metric, verified (identity, triangle inequality) on sampled triples. Missing values: diagnoses, specialty, payer and labs use explicit UNKNOWN/NOT_MEASURED states; numerics use the index median.
 
 ## 3. Data
 
@@ -36,7 +36,7 @@ Diabetes 130-US Hospitals (1999-2008; Strack et al., 2014; UCI, CC BY 4.0): 101,
 - Grid: n in {32, 64}, L in {8, 16, 32} (L <= n), c/N in {0.5%, 1%, 5%}, random and farthest-first pivots, 3 seeds.
 - Pareto-optimal settings chosen on validation, frozen, evaluated on test once.
 - Metrics: recall@10; distance computations, entries scored, postings read per query; index size; build distances; median latency and peak memory (single-threaded).
-- Patient-level bootstrap 95% CIs, paired per-query differences, seed variability reported separately from query variability.
+- Patient-level bootstrap 95% CIs, paired per-query differences, seed variability reported separately from query variability; MI-File zero-overlap miss rate.
 
 Work split: J. Smouter - preprocessing, metric, brute force, BallTree; A. Nalla - TPS, MI-File, pivots; experiments, statistics and report are joint.
 
@@ -44,7 +44,7 @@ Work split: J. Smouter - preprocessing, metric, brute force, BallTree; A. Nalla 
 
 Python 3.11+ (NumPy, pandas; scikit-learn only for the BallTree baseline and pairwise L1 kernels), organized as a package with fixed seeds, a README and pytest tests. Distances are computed in vectorized chunks; brute-force top-50 lists are cached per N.
 
-Correctness checks: metric axioms on sampled triples; BallTree equals brute force; TPS and MI-File return the brute-force answer when c = N and L = n; no patient in more than one partition.
+Correctness checks: metric axioms on sampled triples; BallTree equals brute force; TPS and MI-File reproduce the brute-force answer when c = N; no patient in more than one partition.
 
 Primary coding already done: loader, patient-grouped split, weighted-L1 encoder, brute-force oracle, metric tests. Plan: pivot permutations and TPS (mid-Nov), MI-File and BallTree validation (late Nov), experiments, analysis and report (until Dec 7).
 

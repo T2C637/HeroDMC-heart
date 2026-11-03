@@ -40,7 +40,7 @@ story = [
               "MI-File beat a truncated permutation scan, and how does random "
               "versus farthest-first pivot selection change this?", body),
 
-    Paragraph("<b>2. Methods.</b> Implemented by us: (i) <b>brute-force exact "
+    Paragraph("<b>2. Methods.</b> We follow the permutation-based indexing framework (Chávez et al., 2008; Mohamed and Marchand-Maillet, 2015). Implemented by us: (i) <b>brute-force exact "
               "kNN</b> (ground truth, ties broken by encounter id); (ii) a "
               "<b>truncated permutation scan</b> (TPS): each object stores the "
               "ranks of its L nearest pivots (rank L+1 otherwise); the query "
@@ -61,8 +61,8 @@ story = [
               "medications); numeric features use scale-normalized absolute "
               "difference, nominal ones 0/1 mismatch, missing values get a "
               "fixed state or median plus indicator (no pairwise omission). With "
-              "fixed scales and weights this is a metric, which we verify "
-              "(identity, triangle inequality) on sampled triples.", body),
+              "fixed scales and weights this is a weighted L1 metric, which we verify "
+              "(identity, triangle inequality) on sampled triples. Missing values: diagnoses, specialty, payer and labs use explicit UNKNOWN/NOT_MEASURED states; numerics use the index median.", body),
 
     Paragraph("<b>3. Data.</b> <b>Diabetes 130-US Hospitals (1999&ndash;2008)</b> "
               "(Strack et al., 2014; UCI, CC BY 4.0): 101,766 encounters, 71,518 "
@@ -84,8 +84,8 @@ story = [
               "median latency and peak memory (single-threaded, same machine). "
               "We report patient-level bootstrap 95% CIs, paired per-query "
               "differences, and seed variability separately from query "
-              "variability. Deliverables: a Python 3.11+ package with README and "
-              "fixed seeds, and a report relating the trade-offs to theory. "
+              "variability. We also measure how often a query shares no retained "
+              "pivot with its true neighbors (MI-File zero-overlap misses). "
               "Work split: J. Smouter &ndash; preprocessing, metric, brute force, "
               "BallTree; A. Nalla &ndash; TPS, MI-File, pivots; experiments, "
               "statistics and report are joint.", body),
@@ -98,8 +98,8 @@ story = [
               "pytest tests. Distances are computed in vectorized chunks; "
               "brute-force top-50 lists are cached per N. Correctness checks: "
               "metric axioms on sampled triples; BallTree results equal brute "
-              "force; TPS and MI-File return exactly the brute-force answer when "
-              "c = N and L = n; no patient in more than one partition. "
+              "force; TPS and MI-File reproduce the brute-force answer in the "
+              "degenerate setting c = N; no patient in more than one partition. "
               "Primary coding is already under way: the loader, "
               "patient-grouped split, weighted-L1 encoder, brute-force oracle "
               "and metric tests are implemented. Plan: pivot permutations and "
@@ -114,13 +114,13 @@ story = [
 
     Spacer(1, 2),
     Paragraph("<b>References</b>", body),
+    Paragraph("Amato, G., and Savino, P. (2008). Approximate similarity search in "
+              "metric spaces using inverted files. In <i>Proc. 3rd International "
+              "Conference on Scalable Information Systems (InfoScale)</i>.", ref),
     Paragraph("Chávez, E., Figueroa, K., and Navarro, G. (2008). Effective "
               "proximity retrieval by ordering permutations. <i>IEEE "
               "Transactions on Pattern Analysis and Machine Intelligence</i>, "
               "30(9), 1647&ndash;1658.", ref),
-    Paragraph("Amato, G., and Savino, P. (2008). Approximate similarity search in "
-              "metric spaces using inverted files. In <i>Proc. 3rd International "
-              "Conference on Scalable Information Systems (InfoScale)</i>.", ref),
     Paragraph("Mohamed, H., and Marchand-Maillet, S. (2015). Scalable indexing for "
               "big data processing. In <i>Big Data: Algorithms, Analytics, and "
               "Applications</i>. Chapman and Hall/CRC.", ref),
