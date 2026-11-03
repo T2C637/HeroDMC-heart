@@ -1,6 +1,11 @@
 """Metric and leakage tests for the encoding and brute-force oracle."""
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # allows running this file directly
 
 from knn import data as D
 from knn.brute import brute_force_knn, l1
@@ -41,3 +46,7 @@ def test_brute_force_self_neighbor_first(setup):
     rows, dist = brute_force_knn(X[:20], X, ids, k=5)
     assert np.allclose(dist[:, 0], 0, atol=1e-6)
     assert (np.diff(dist, axis=1) >= -1e-6).all()
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-q"]))
