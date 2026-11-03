@@ -40,8 +40,21 @@ Diabetes 130-US Hospitals (1999-2008; Strack et al., 2014; UCI, CC BY 4.0): 101,
 
 Work split: J. Smouter - preprocessing, metric, brute force, BallTree; A. Nalla - TPS, MI-File, pivots; experiments, statistics and report are joint.
 
+## 5. Implementation, validation and plan
+
+Python 3.11+ (NumPy, pandas; scikit-learn only for the BallTree baseline and pairwise L1 kernels), organized as a package with fixed seeds, a README and pytest tests. Distances are computed in vectorized chunks; brute-force top-50 lists are cached per N.
+
+Correctness checks: metric axioms on sampled triples; BallTree equals brute force; TPS and MI-File return the brute-force answer when c = N and L = n; no patient in more than one partition.
+
+Primary coding already done: loader, patient-grouped split, weighted-L1 encoder, brute-force oracle, metric tests. Plan: pivot permutations and TPS (mid-Nov), MI-File and BallTree validation (late Nov), experiments, analysis and report (until Dec 7).
+
+Expectation (to be tested, not assumed): recall rises with L and c; the MI-File reads far fewer entries than the scan at small L, at the risk of zero-overlap misses.
+
+Threats to validity: one dataset and one distance design; recall is measured against the exact answer under our metric, not clinical similarity.
+
 ## References
 
 - Amato, G., and Savino, P. (2008). Approximate similarity search in metric spaces using inverted files. *Proc. 3rd InfoScale*.
+- Chávez, E., Figueroa, K., and Navarro, G. (2008). Effective proximity retrieval by ordering permutations. *IEEE TPAMI*, 30(9), 1647-1658.
 - Mohamed, H., and Marchand-Maillet, S. (2015). Scalable indexing for big data processing. In *Big Data: Algorithms, Analytics, and Applications*. Chapman and Hall/CRC.
 - Strack, B., et al. (2014). Impact of HbA1c measurement on hospital readmission rates. *BioMed Research International*, 2014, 781670. Data: UCI ML Repository, doi:10.24432/C5230J.

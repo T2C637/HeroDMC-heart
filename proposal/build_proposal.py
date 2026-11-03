@@ -10,12 +10,12 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 OUT = Path(__file__).parent / "DS8001 project proposal Smouter Nalla.pdf"
 
-body = ParagraphStyle("body", fontName="Times-Roman", fontSize=9.3, leading=10.8,
+body = ParagraphStyle("body", fontName="Times-Roman", fontSize=10, leading=11.8,
                       alignment=TA_JUSTIFY, spaceAfter=3.5)
 title = ParagraphStyle("title", parent=body, fontName="Times-Bold", fontSize=12.5,
                        leading=14.5, alignment=1, spaceAfter=1)
 sub = ParagraphStyle("sub", parent=body, alignment=1, spaceAfter=5)
-ref = ParagraphStyle("ref", parent=body, fontSize=8.2, leading=9.5, leftIndent=12,
+ref = ParagraphStyle("ref", parent=body, fontSize=9, leading=10.4, leftIndent=12,
                      firstLineIndent=-12, spaceAfter=1.5)
 code = "<font name='Courier'>{}</font>".format
 
@@ -90,8 +90,34 @@ story = [
               "BallTree; A. Nalla &ndash; TPS, MI-File, pivots; experiments, "
               "statistics and report are joint.", body),
 
+    Paragraph("<b>5. Implementation, validation and plan.</b> All code is "
+              "Python 3.11+ (NumPy, pandas, scikit-learn only for the BallTree "
+              "baseline and pairwise L1 kernels), organized as a package "
+              "(" + code("data") + ", " + code("brute") + ", pivots, "
+              "TPS, MI-File, experiment runner) with fixed seeds, a README and "
+              "pytest tests. Distances are computed in vectorized chunks; "
+              "brute-force top-50 lists are cached per N. Correctness checks: "
+              "metric axioms on sampled triples; BallTree results equal brute "
+              "force; TPS and MI-File return exactly the brute-force answer when "
+              "c = N and L = n; no patient in more than one partition. "
+              "Primary coding is already under way: the loader, "
+              "patient-grouped split, weighted-L1 encoder, brute-force oracle "
+              "and metric tests are implemented. Plan: pivot permutations and "
+              "TPS (mid-Nov), MI-File and BallTree validation (late Nov), full "
+              "experiments, analysis and report (until Dec 7). We expect recall "
+              "to rise with L and c and the MI-File to read far fewer entries "
+              "than the scan at small L, at the risk of zero-overlap misses; "
+              "we will test, not assume, this. <b>Threats to validity:</b> one "
+              "dataset and one distance design, and recall is measured against "
+              "the exact answer under our metric, not clinical similarity.",
+              body),
+
     Spacer(1, 2),
     Paragraph("<b>References</b>", body),
+    Paragraph("Chávez, E., Figueroa, K., and Navarro, G. (2008). Effective "
+              "proximity retrieval by ordering permutations. <i>IEEE "
+              "Transactions on Pattern Analysis and Machine Intelligence</i>, "
+              "30(9), 1647&ndash;1658.", ref),
     Paragraph("Amato, G., and Savino, P. (2008). Approximate similarity search in "
               "metric spaces using inverted files. In <i>Proc. 3rd International "
               "Conference on Scalable Information Systems (InfoScale)</i>.", ref),
