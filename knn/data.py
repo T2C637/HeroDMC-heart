@@ -83,10 +83,11 @@ def sample_queries(df: pd.DataFrame, rows: np.ndarray, n: int, seed: int = 0) ->
 class Encoder:
     """Maps rows to vectors whose plain L1 distance equals the mixed-type distance.
 
-    Numeric/ordinal: |x-y| / range (range fit on the index; queries are clipped to it).
+    Numeric/ordinal: |x-y| / range (range fit on the index; queries are not clipped).
     Nominal: 0/1 mismatch via one-hot coordinates scaled by half the feature weight, plus an
     "unseen" level so that categories absent from the index still differ from every seen one.
-    Distance = sum over groups of (1/6) * mean over the group's features, so it lies in [0, 1].
+    Distance = sum over groups of (1/6) * mean over the group's features. It lies in [0, 1]
+    when numeric values fall within the fitted ranges; out-of-range values are not clipped.
     Zero-range numeric features are dropped.
     """
 
@@ -105,7 +106,7 @@ class Encoder:
         return self
 
     def transform(self, df: pd.DataFrame) -> np.ndarray:
-        num = np.clip(df[self.numeric].to_numpy(float), self.lo, self.lo + self.range)
+        num = df[self.numeric].to_numpy(float)
         w_num = np.array([self.weights[c] for c in self.numeric])
         blocks = [(num - self.lo) / self.range * w_num]
         for c in self.nominal:

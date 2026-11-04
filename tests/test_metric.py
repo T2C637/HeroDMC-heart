@@ -32,10 +32,20 @@ def test_metric_axioms_on_sampled_triples(setup):
     d = l1(X, X)
     assert np.allclose(np.diag(d), 0)
     assert np.allclose(d, d.T, atol=1e-6)
-    assert d.max() <= 1 + 1e-5
+    assert np.all(d >= 0)
+    assert np.array_equal(d <= 1e-6, np.all(np.isclose(X[:, None], X[None, :]), axis=2))
     for _ in range(2000):
         i, j, k = rng.integers(0, len(X), 3)
         assert d[i, k] <= d[i, j] + d[j, k] + 1e-6
+
+
+def test_encoder_preserves_out_of_range_numeric_differences(setup):
+    df, idx, _, _, enc = setup
+    col = "time_in_hospital"
+    low = df.iloc[idx][col].min()
+    queries = df.iloc[[idx[0], idx[0]]].copy()
+    queries.loc[:, col] = [low, low - 1]
+    assert l1(enc.transform(queries[:1]), enc.transform(queries[1:]))[0, 0] > 0
 
 
 def test_brute_force_self_neighbor_first(setup):
